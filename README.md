@@ -1,4 +1,4 @@
-# Laravel import Google Spreadsheet using a model
+# Laravel import Google Spreadsheet using Eloquent Model
 
 ## Install
 
