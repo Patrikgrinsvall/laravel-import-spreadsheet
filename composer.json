@@ -1,0 +1,41 @@
+{
+    "name": "patrikgrinsvall/laravel-import-spreadsheet",
+    "description": "Laravel Artisan command for importing a google docs spreadsheet into database using a model",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "google docs",
+        "import",
+        "file",
+        "csv",
+        "spreadsheet"
+    ],
+    "homepage": "https://github.com/patrikgrinsvall/laravel-import-spreadsheet",
+    "authors": [
+        {
+            "name": "patrik grinsvall",
+            "email": "patrik@silentridge.io"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "^8.0",
+        "rap2hpoutre/fast-excel": "^3.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "PatrikGrinsvall\\ImportSpreadsheet\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "PatrikGrinsvall\\ImportSpreadsheet\\ImportSpreadsheetServiceProvider"
+            ]
+        }
+    },
+    "require-dev": {
+        "pestphp/pest": "1.x-dev",
+        "pestphp/pest-plugin-laravel": "1.x-dev"
+    }
+}
