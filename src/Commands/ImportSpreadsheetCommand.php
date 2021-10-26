@@ -17,13 +17,14 @@ class ImportSpreadsheetCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'import:google-spreadsheet
-                                {--s|spreadsheet=   : The id of the spreadsheet, the character sequence after /d/ in the spreadsheet URL. This must be made public (required)}
-                                {--m|model=         : The model to match. The columns in the spreadsheet must match the columns snake_case in the model or else they are silently skipped (required)}
+    protected $signature = 'import:google-spreadsheet - Imports from google spreadsheet to db using a eloquent model, trying to match header with columns, its pretty fast, 3k rows in a few seconds.
+                                {--s|spreadsheet=   : The google docs spreadsheet id. The character sequence after /d/ in the spreadsheet URL. This must be made public (required)}
+                                {--m|model=         : The eloquent model to match. The columns in the spreadsheet must match the columns snake_case in the model or else they are silently skipped (required)}
                                 {--u|unique-key=    : eg. title=identifier, this will take header column in csv and match against the column identifier in the model which must be unique (optional)}
-                                {--j|json-column=   : If the model has a json column where all data should be put, specify this here. (optional)}
-                                {--c|create-new     : Always create a new record, never match key and try to update (boolean, optional)}
-                                {--f|filename=      : Use this filename as intermediate storage (default=import.csv)}
+                                {--j|json-column=   : If the model has a json column where all data should be put, specify this here. Theoreticly this option is the only one needed. (optional)}
+                                {--c|create-new     : Always create a new record, never match key and try to update the unique key. (boolean, optional)}
+                                {--f|filename=      : Use this filename as intermediate storage. No need to use unless you want to parse csv in another job. (default=import.csv)}
+                                {--e|skip-errors    : Skip errors if possible and continue with next row, such as duplicate key or error when inserting data}
                                 ';
 
     /**
@@ -33,9 +34,9 @@ class ImportSpreadsheetCommand extends Command
      */
     protected $description = 'Import from google spreadsheets into a model.Note, in order to use the update existing row feature the model must have softdeletes.';
     protected $help = 'Examples:
-    - php artisan import:google-spreadsheet -s spreadsheetid --create-new --model App\\\\Models\\\\Post
-    - php artisan import:google-spreadsheet -s spreadsheetid --create-new --model App\\\\Models\\\\Post --filename=mytmpcsv.csv
-    - php artisan import:google-spreadsheet -s spreadsheetid -u "Spreadsheet header column=datebase_column"  --model App\\\\Models\\\\Post --json-column post_attributes
+    - php artisan import:google-spreadsheet -s spreadsheetid --create-new --model=App\\\\Models\\\\Post --skip-errors --json-column=json_data
+    - php artisan import:google-spreadsheet -s spreadsheetid --create-new --model=App\\\\Models\\\\Post --filename=mytmpcsv.csv
+    - php artisan import:google-spreadsheet -s spreadsheetid -u="Spreadsheet header column=datebase_column"  --model=App\\\\Models\\\\Post --json-column=post_attributes
 
     Config can be published and also set in environment variables. Handy if supposed to syncronize data from a spreadsheet into database on a regular basis.
     ';
@@ -104,17 +105,21 @@ class ImportSpreadsheetCommand extends Command
 
                 if ($this->option('json-column') || config($this->confNamespace . ".json-column"))
                     $line[$this->json_column] = $line;
+                try {
+                    if ($this->hasOption('create-new')) {
+                        $model = $this->model::withTrashed()->updateOrCreate(
+                            $record,
+                        )->fill($line);
+                        $model->restore();
+                    } else {
+                        $model = $this->model::create($record)->fill($line);
+                    }
 
-                if ($this->hasOption('create-new')) {
-                    $model = $this->model::withTrashed()->updateOrCreate(
-                        $record,
-                    )->fill($line);
-                    $model->restore();
-                } else {
-                    $model = $this->model::create($record)->fill($line);
+                    $model->save();
+                } catch (\Exception $e) {
+                    $this->info("Use --skip-errors to continue anyway. Exception when inserting model: " . print_R($record, 1) . "Error is:" . $e->getMessage());
+                    throw_if($this->option('skip-errors') !== true, "Throwing Error when inserting model, use --skip-errors if you want to run anyway. Error is: " . $e->getMessage());
                 }
-
-                $model->save();
                 $cnt++;
             });
         $this->info((blank($this->option('create-new')) ? 'Created: ' : 'Updated: ') . $cnt . " rows into table: " . $this->model->getTable() . " which had $rowsUdated rows before import");
@@ -155,4 +160,3 @@ class ImportSpreadsheetCommand extends Command
     }
 
 }
-
