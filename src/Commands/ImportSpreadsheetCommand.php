@@ -163,11 +163,11 @@ class ImportSpreadsheetCommand extends Command
 
             $this->uniqueCol = $tmp[0];
             $this->uniqueAttribute = $tmp[1];
-            throw_if(!array_key_exists($this->uniqueAttribute, $this->model->getAttributes()), "The attribute: ". $this->uniqueAttribute." was not found in model: ".$this->model::class)
+            throw_if(!array_key_exists($this->uniqueAttribute, $this->model->getAttributes()), "The attribute: ". $this->uniqueAttribute." was not found in model: ".$this->model::class);
         }
         $this->json_column = $this->option('json-column') ?? null;
         if(!is_null($this->json_column)) {
-            throw_if(!array_key_exists($this->json_column, $this->model->getAttributes()), "The json column: ". $this->json_column." was not found in model: ".$this->model::class)
+            throw_if(!array_key_exists($this->json_column, $this->model->getAttributes()), "The json column: ". $this->json_column." was not found in model: ".$this->model::class);
         }
 
     }
