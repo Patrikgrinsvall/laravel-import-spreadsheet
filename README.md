@@ -107,3 +107,9 @@ From `config/import-spreadsheet.php`
     'filename' => env('IMPORT_SPREADSHEET_FILENAME', storage_path('csvimport.csv'))
 
 ```
+
+## Contribute
+PR´s are very welcome
+
+## Compability
+Only tested with laravel 8.0 and 8.1
