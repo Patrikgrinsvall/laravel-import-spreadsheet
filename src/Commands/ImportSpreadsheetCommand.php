@@ -24,7 +24,7 @@ class ImportSpreadsheetCommand extends Command
                                 {--j|json-column=   : If the model has a json column where all data should be put, specify this here. Theoreticly this option is the only one needed. (optional)}
                                 {--c|create-new     : Always create a new record, never match key and try to update the unique key. (boolean, optional)}
                                 {--f|filename=      : Use this filename as intermediate storage. No need to use unless you want to parse csv in another job. (default=storage_path('import.csv')}
-                                {--d|disable-cache  : By default the response from google docs is cached for an hour, this flag disables this cache}
+                                {--d|cache-ttl=     : By default the response from google docs is cached for 3600 seconds, this option changes this value, use 0 to disable cache}
                                 {--e|skip-errors    : Skip errors if possible and continue with next row, such as duplicate key or error when inserting data}
                                 ';
 
@@ -36,11 +36,11 @@ class ImportSpreadsheetCommand extends Command
     protected $description = 'Import from google spreadsheets into a model.Note, in order to use the update existing row feature the model must have soft-deletes enabled. Note! The response from google docs is by default cached for an hour but can be toggled with --disable-cache flag';
     protected $help = 'Examples:
     1) Always create a new record, use the ´Post´ model and dont match against existing record, continue even if there are database errors and also add all values to a json column named json_data without caching the response
-    - php artisan import:google-spreadsheet -s spreadsheetid --create-new --model=App\\\\Models\\\\Post --skip-errors --json-column=json_data --disable-cache
+    - php artisan import:google-spreadsheet -s spreadsheetid --create-new --model=App\\\\Models\\\\Post --skip-errors --json-column=json_data --cache-ttl=0
     2) Always create a new record, use the ´Post´ model and dont match against existing record, save the spreadsheet in ´storage_path("mytmpcsv.csv")´
     - php artisan import:google-spreadsheet -s spreadsheetid --create-new --model=App\\\\Models\\\\Post --filename=mytmpcsv.csv
     3) Import data using ´database_column´ as unique key, meaning all rows will be matched against database record with this corresponding value from csv, use the ´Post´ model, save all fields as json in column ´post_attributes´ and dont cache the response
-    - php artisan import:google-spreadsheet -s spreadsheetid -u="Spreadsheet header column=datebase_column"  --model=App\\\\Models\\\\Post --json-column=post_attributes --disable-cache
+    - php artisan import:google-spreadsheet -s spreadsheetid -u="Spreadsheet header column=datebase_column"  --model=App\\\\Models\\\\Post --json-column=post_attributes --cache-ttl=0
 
     The config can be published using ´artisan vendor:publish´. The config values can also be set as environment variables with the same name but UPPER_CASED. Handy if you want to syncronize data from a spreadsheet into database on a regular basis, for example as a cron-job.
     ';
@@ -75,7 +75,7 @@ class ImportSpreadsheetCommand extends Command
     public function downloadCsv()
     {
         $url = $this->baseUrl . $this->spreadsheet . "/export?format=csv";
-        $body = Cache::remember($url, 3600, function () use ($url) {
+        $body = Cache::remember($url, $this->cacheTtl, function () use ($url) {
             $response = Http::get($url)
                 ->onError(function () use ($url) {
                     throw new \Exception('Couldnt download csv from google docs, url: ' . $url);
@@ -139,14 +139,15 @@ class ImportSpreadsheetCommand extends Command
             $this->error("Missing spreadsheet id");
             return Command::FAILURE;
         }
-        if (!blank($this->option('filename'))) $this->filename = $this->option('filename');
 
-        $this->spreadsheet = $this->option('spreadsheet') ?? config($this->confNamespace . ".spreadsheet_id") ??
+        $this->filename = $this->option('filename') ?? config($this->confNamespace . ".filename") ?? $this->filename;
+
+        $this->spreadsheet = $this->option('spreadsheet') ?? config($this->confNamespace . ".spreadsheet") ??
             $this->spreadsheet;
 
         if (blank($this->option('unique-key')) && !(config($this->confNamespace . ".unique-key"))
             && blank($this->option('create-new'))) {
-            $this->error("Missing the unique key identifier mapping. Need to know what field to map to model");
+            $this->error("Missing the unique key identifier mapping. Need to know what field to map to model or the flag, --create-new");
         }
         if (blank($this->option('model') && !config($this->confNamespace . '.model'))) {
             $this->error('Missing what model to use');
