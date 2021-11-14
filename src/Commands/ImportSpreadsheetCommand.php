@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Rap2hpoutre\FastExcel\FastExcel;
-
+use Illuminate\Support\Facades\Schema;
 class ImportSpreadsheetCommand extends Command
 {
     /**
@@ -157,17 +157,20 @@ class ImportSpreadsheetCommand extends Command
         $this->model = app($this->option('model')) ?? config($this->confNamespace . '.model');
         throw_if(!in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses($this->model)),
             "The model doesnt have soft deletes which are required. Please add softdeletes to the model or override importcsv function");
-
-        if(!is_null($this->uniqueCol)) {
+        $uniqueKey = $this->option("unique-key") ?? config($this->confNamespace . ".unique-key") ?? null;
+        if(!is_null($uniqueKey)) {
             $tmp = explode("=", $this->option("unique-key") ?? config($this->confNamespace . ".unique-key"));
 
             $this->uniqueCol = $tmp[0];
             $this->uniqueAttribute = $tmp[1];
-            throw_if(!array_key_exists($this->uniqueAttribute, $this->model->getAttributes()), "The attribute: ". $this->uniqueAttribute." was not found in model: ".$this->model::class);
+
+
+            throw_if(!Schema::hasColumn($this->model->getTable(), $this->uniqueAttribute), "The attribute: ". $this->uniqueAttribute." was not found in model: ".$this->model::class);
         }
         $this->json_column = $this->option('json-column') ?? null;
+
         if(!is_null($this->json_column)) {
-            throw_if(!array_key_exists($this->json_column, $this->model->getAttributes()), "The json column: ". $this->json_column." was not found in model: ".$this->model::class);
+            throw_if(!Schema::hasColumn($this->model->getTable(), $this->json_column), "The json column: ". $this->json_column." was not found in model: ".$this->model::class);
         }
 
     }
