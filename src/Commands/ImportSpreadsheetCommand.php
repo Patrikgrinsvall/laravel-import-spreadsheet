@@ -23,7 +23,7 @@ class ImportSpreadsheetCommand extends Command
                                 {--u|unique-key=    : eg. header_column=column_name, this will match spreadsheet header column against the attribute/table column name in the model. Example is to use the name of the primary_key in the table. (optional)}
                                 {--j|json-column=   : If the model has a json column where all data should be put, specify this here. Theoreticly this option is the only one needed. (optional)}
                                 {--c|create-new     : Always create a new record, never match key and try to update the unique key. (boolean, optional)}
-                                {--f|filename=      : Use this filename as intermediate storage. No need to use unless you want to parse csv in another job. (default=storage_path('import.csv')}
+                                {--f|filename=      : Use this filename as intermediate storage. No need to use unless you want to parse csv in another job. (default=storage_path("import.csv")}
                                 {--d|cache-ttl=     : By default the response from google docs is cached for 3600 seconds, this option changes this value, use 0 to disable cache}
                                 {--e|skip-errors    : Skip errors if possible and continue with next row, such as duplicate key or error when inserting data}
                                 ';
