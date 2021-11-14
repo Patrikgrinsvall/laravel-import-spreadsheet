@@ -96,22 +96,23 @@ class ImportSpreadsheetCommand extends Command
      */
     public function importCsv()
     {
-        if ($this->hasOption('create-new')) {
+
+        if ($this->input->getOption('create-new') == false) {
             $rowsUdated = Db::table($this->model->getTable())->update(['deleted_at' => Carbon::now()]);
         } else $rowsUdated = 0;
         $cnt = 0;
         (new FastExcel)
             ->import(storage_path($this->filename), function ($line) use (&$cnt) {
-                if (blank($line[$this->uniqueCol])) return;
+                if(!blank($this->uniqueAttribute) && !blank($line[$this->uniqueCol])) {
+                    $record = [
+                        $this->uniqueAttribute => $line[$this->uniqueCol]
+                    ];
+                }
 
-                $record = [
-                    $this->uniqueAttribute => $line[$this->uniqueCol]
-                ];
-
-                if ($this->option('json-column') || config($this->confNamespace . ".json-column"))
+                if (!blank( $this->json_column))
                     $line[$this->json_column] = $line;
                 try {
-                    if ($this->hasOption('create-new')) {
+                    if ($this->input->getOption('create-new') == false) {
                         $model = $this->model::withTrashed()->updateOrCreate(
                             $record,
                         )->fill($line);
@@ -135,6 +136,7 @@ class ImportSpreadsheetCommand extends Command
      */
     public function parseOptions()
     {
+
         if (blank($this->option('spreadsheet')) && !config($this->confNamespace . ".spreadsheet_id")) {
             $this->error("Missing spreadsheet id");
             return Command::FAILURE;
