@@ -123,14 +123,17 @@ class ImportSpreadsheetCommand extends Command
 
                     $model->save();
                 } catch (\Exception $e) {
-                    $this->info("Use --skip-errors to continue anyway. Exception when inserting model: " . print_R($record, 1) . "Error is:" . $e->getMessage());
+                    $this->output("Use --skip-errors to continue anyway. Exception when inserting model: " . print_R($record, 1) . "Error is:" . $e->getMessage());
                     throw_if($this->option('skip-errors') !== true, "Throwing Error when inserting model, use --skip-errors if you want to run anyway. Error is: " . $e->getMessage());
                 }
                 $cnt++;
             });
-        $this->info((blank($this->option('create-new')) ? 'Created: ' : 'Updated: ') . $cnt . " rows into table: " . $this->model->getTable() . " which had $rowsUdated rows before import");
+        $this->output((blank($this->option('create-new')) ? 'Created: ' : 'Updated: ') . $cnt . " rows into table: " . $this->model->getTable() . " which had $rowsUdated rows before import");
     }
-
+    public function output($message){
+            logger($message);
+            $this->line($message);
+    }
     /**
      * @return int|void
      */
@@ -138,7 +141,7 @@ class ImportSpreadsheetCommand extends Command
     {
 
         if (blank($this->option('spreadsheet')) && !config($this->confNamespace . ".spreadsheet_id")) {
-            $this->error("Missing spreadsheet id");
+            $this->output("Missing spreadsheet id");
             return Command::FAILURE;
         }
 
@@ -149,10 +152,10 @@ class ImportSpreadsheetCommand extends Command
 
         if (blank($this->option('unique-key')) && !(config($this->confNamespace . ".unique-key"))
             && blank($this->option('create-new'))) {
-            $this->error("Missing the unique key identifier mapping. Need to know what field to map to model or the flag, --create-new");
+            $this->output("Missing the unique key identifier mapping. Need to know what field to map to model or the flag, --create-new");
         }
         if (blank($this->option('model') && !config($this->confNamespace . '.model'))) {
-            $this->error('Missing what model to use');
+            $this->output('Missing what model to use');
         }
         $this->cacheTtl = $this->option('cache-ttl') ?? config($this->confNamespace . ".cache-ttl") ?? $this->cacheTtl;
 
